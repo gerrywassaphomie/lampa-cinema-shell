@@ -500,6 +500,10 @@
         state.initialized = true;
         addEvent('init', 'Инициализация завершена');
         log('Initialized v' + VERSION);
+        if (!window.cinemaDiagAutoOpened) {
+    window.cinemaDiagAutoOpened = true;
+    setTimeout(openDiagnostics, 500);
+}
 
         return true;
     }
