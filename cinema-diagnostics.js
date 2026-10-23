@@ -1,73 +1,123 @@
 
 (function () {
-    if (window.cinemaDiagV2) return;
-    window.cinemaDiagV2 = true;
+    'use strict';
 
-    function show() {
+    if (window.cinemaDiagSafe) return;
+    window.cinemaDiagSafe = true;
+
+    function init() {
         var L = window.Lampa;
-        var lines = [];
 
-        lines.push('Lampa: ' + typeof L);
+        if (!L || !L.Component || !L.Activity) return false;
 
-        if (L) {
-            var keys = Object.keys(L).sort();
+        try {
+            L.Component.add('cinema_diagnostics_safe', function () {
+                var root;
 
-            lines.push('');
-            lines.push('=== MODULES (' + keys.length + ') ===');
+                this.create = function () {
+                    root = document.createElement('div');
+                    root.style.cssText =
+                        'padding:30px;color:white;background:#101a2b;' +
+                        'font:18px Arial;min-height:80vh';
 
-            keys.forEach(function (key) {
-                var value;
-                try {
-                    value = L[key];
-                    lines.push(
-                        key + ': ' +
-                        (value === null ? 'null' : typeof value) +
-                        (value && typeof value === 'object'
-                            ? ' [' + Object.keys(value).slice(0, 12).join(', ') + ']'
-                            : '')
-                    );
-                } catch (e) {
-                    lines.push(key + ': [error]');
-                }
+                    var title = document.createElement('h2');
+                    title.textContent = 'Cinema — диагностика';
+
+                    var info = document.createElement('pre');
+                    info.style.whiteSpace = 'pre-wrap';
+
+                    var keys = Object.keys(L).sort();
+                    info.textContent =
+                        'Lampa: доступна\n' +
+                        'Модулей: ' + keys.length + '\n\n' +
+                        keys.join('\n');
+
+                    var hint = document.createElement('p');
+                    hint.textContent =
+                        'Сфотографируй этот экран и пришли в чат.';
+
+                    root.appendChild(title);
+                    root.appendChild(info);
+                    root.appendChild(hint);
+
+                    return window.$ ? $(root) : root;
+                };
+
+                this.render = function () {
+                    return window.$ ? $(root) : root;
+                };
+
+                this.destroy = function () {
+                    if (root && root.parentNode) {
+                        root.parentNode.removeChild(root);
+                    }
+                    root = null;
+                };
+            });
+        } catch (e) {
+            return false;
+        }
+
+        function open() {
+            L.Activity.push({
+                url: '',
+                title: 'Cinema диагностика',
+                component: 'cinema_diagnostics_safe',
+                page: 1
             });
         }
 
-        var old = document.getElementById('cinema-diag-v2');
-        if (old) old.remove();
+        function addButton() {
+            var menu = document.querySelector('.menu .menu__list');
+            if (!menu) return false;
+            if (menu.querySelector('[data-cinema-safe]')) return true;
 
-        var box = document.createElement('div');
-        box.id = 'cinema-diag-v2';
-        box.style.cssText =
-            'position:fixed;z-index:999999;top:2%;left:2%;' +
-            'width:94%;height:94%;box-sizing:border-box;' +
-            'padding:16px;background:#101a2b;color:white;' +
-            'font:16px monospace;overflow:auto;white-space:pre-wrap;' +
-            'word-break:break-word;border:2px solid #72d5ff';
+            var item = document.createElement('li');
+            item.className = 'menu__item selector';
+            item.setAttribute('data-cinema-safe', '1');
+            item.textContent = 'Cinema диагностика';
+            item.style.cssText = 'padding:15px;color:white;';
 
-        var output = document.createElement('pre');
-        output.style.cssText =
-            'white-space:pre-wrap;word-break:break-word;margin:0';
-        output.textContent = lines.join('\n');
+            item.addEventListener('click', open);
 
-        var close = document.createElement('button');
-        close.textContent = 'ЗАКРЫТЬ';
-        close.style.cssText = 'font-size:20px;padding:10px;margin-top:12px';
-        close.onclick = function () {
-            box.remove();
-        };
+            if (window.$) {
+                $(item).on('hover:enter', open);
+            }
 
-        box.appendChild(output);
-        box.appendChild(close);
-        document.body.appendChild(box);
+            menu.appendChild(item);
+            return true;
+        }
+
+        addButton();
+
+        if (L.Listener && L.Listener.follow) {
+            L.Listener.follow('app', function (event) {
+                if (event.type === 'ready') addButton();
+            });
+        }
+
+        return true;
     }
 
-    function start() {
-        setTimeout(show, 3000);
+    var count = 0;
+
+    function retry() {
+        if (init()) return;
+        count++;
+        if (count < 20) setTimeout(retry, 1000);
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', start);
+    if (window.appready) {
+        retry();
+    } else if (
+        window.Lampa &&
+        Lampa.Listener &&
+        Lampa.Listener.follow
+    ) {
+        Lampa.Listener.follow('app', function (event) {
+            if (event.type === 'ready') retry();
+        });
     } else {
-        start();
+        retry();
     }
 })();
