@@ -2,58 +2,45 @@
 (function () {
     'use strict';
 
-    var ID = 'cinema-diag-execution-test';
+    // Подтверждаем загрузку плагина для Lampa
+    window.plugin_cinema_diagnostics_ready = true;
 
-    function show() {
-        if (document.getElementById(ID)) return;
+    // Не запускаем повторно
+    if (window.__cinema_diag_test_started) return;
+    window.__cinema_diag_test_started = true;
+
+    function showTest() {
+        if (!document.body) {
+            setTimeout(showTest, 100);
+            return;
+        }
 
         var panel = document.createElement('div');
-        panel.id = ID;
 
         panel.style.cssText =
-            'position:fixed;z-index:2147483647;' +
-            'left:3%;top:3%;width:94%;height:90%;' +
-            'box-sizing:border-box;padding:30px;' +
-            'overflow:auto;background:#101827;color:white;' +
-            'border:3px solid #55ddff;' +
+            'position:fixed;z-index:999999;' +
+            'left:5%;top:5%;width:90%;padding:25px;' +
+            'box-sizing:border-box;background:#101827;' +
+            'color:white;border:3px solid #55ddff;' +
             'font:22px Arial,sans-serif;';
 
-        var title = document.createElement('h1');
-        title.textContent = 'CINEMA PLUGIN TEST';
-        title.style.color = '#55ddff';
+        panel.innerHTML =
+            '<h2 style="color:#55ddff">CINEMA TEST OK</h2>' +
+            '<p>Плагин подтверждён и JavaScript выполняется.</p>' +
+            '<p>Lampa API: ' +
+            (window.Lampa ? 'доступен' : 'пока недоступен') +
+            '</p>';
 
-        var result = document.createElement('pre');
-        result.style.whiteSpace = 'pre-wrap';
-        result.textContent =
-            'SUCCESS: JavaScript выполняется.\n\n' +
-            'Время: ' + new Date().toISOString() + '\n' +
-            'Lampa: ' + typeof window.Lampa + '\n' +
-            'appready: ' + String(window.appready) + '\n' +
-            'User agent: ' + navigator.userAgent;
-
-        var close = document.createElement('button');
-        close.textContent = 'ЗАКРЫТЬ';
-        close.style.cssText =
-            'font-size:22px;padding:15px 25px;margin-top:20px;';
-
-        close.onclick = function () {
-            if (panel.parentNode) {
-                panel.parentNode.removeChild(panel);
-            }
+        var button = document.createElement('button');
+        button.textContent = 'Закрыть';
+        button.style.cssText = 'font-size:20px;padding:12px;';
+        button.onclick = function () {
+            if (panel.parentNode) panel.parentNode.removeChild(panel);
         };
 
-        panel.appendChild(title);
-        panel.appendChild(result);
-        panel.appendChild(close);
-
-        (document.body || document.documentElement).appendChild(panel);
+        panel.appendChild(button);
+        document.body.appendChild(panel);
     }
 
-    try {
-        show();
-    } catch (e) {
-        try {
-            console.error('[CinemaTest]', e);
-        } catch (ignore) {}
-    }
+    showTest();
 })();
